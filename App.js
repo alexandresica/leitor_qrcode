@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { StyleSheet, Text, View, Button } from "react-native";
+import { useEffect, useState } from "react";
+import { StyleSheet, Text, View, Button, FlatList } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -8,6 +8,12 @@ export default function App() {
   const [conteudoQRCode, setConteudoQRCode] = useState("");
   const [escaneado, setEscaneado] = useState(false);
   const [historico, setHistorico] = useState([]);
+  const timestamp = Date.now();
+  const dataFormatada = new Date(timestamp).toLocaleString('pt-BR');
+  
+  useEffect(()=>{
+    historicoQR();
+  },[]);
 
   if (!permission) {
     return (
@@ -29,6 +35,7 @@ export default function App() {
     );
   }
 
+
   function lerQRCode({ data }) {
     setEscaneado(true);
     setConteudoQRCode(data);
@@ -41,11 +48,12 @@ export default function App() {
 
   async function historicoQR() {
     if(!conteudoQRCode) return
-
+    
+    
     const historicoAtt = [...historico, {
       id: Date.now().toString(),
-      qr: conteudoQRCode,
-      data: Date.UTC(year,date,hour)
+      qr: conteudoQRCode.toString(),
+      data: dataFormatada,
     }]
 
     setHistorico(historicoAtt)
@@ -78,8 +86,17 @@ export default function App() {
           <Button title="Ler outro QR Code" onPress={lerNovamente} />
         )}
       </View>
+      <FlatList
+        data={historico}
+        keyExtractor={item => item.id}
+        renderItem={({item})=>(
+          <View>
+            <Text>{item.qr}</Text>
+            <Text>{item.data}</Text>
+          </View>
+        )}
+      />
 
-      {}
     </View>
   );
 }
