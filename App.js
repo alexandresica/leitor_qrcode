@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, View, Button, FlatList } from "react-native";
+import { StyleSheet, Text, View, Button, FlatList, Vibration, Linking } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Updates from 'expo-updates';
 
 export default function App() {
   const [permission, requestPermission] = useCameraPermissions();
   const [conteudoQRCode, setConteudoQRCode] = useState("");
   const [escaneado, setEscaneado] = useState(false);
   const [historico, setHistorico] = useState([]);
+  const [corTela, setCorTela] = useState("#bdee35");
 
 
   useEffect(() => {
@@ -37,7 +39,8 @@ export default function App() {
   function lerQRCode({ data }) {
     setEscaneado(true);
     setConteudoQRCode(data);
-    salvarHistorico(data)
+    salvarHistorico(data);
+    executarAcaoqr(data);
   }
 
   function lerNovamente() {
@@ -79,9 +82,54 @@ export default function App() {
     }
   }
 
+  function executarAcaoqr(data) {
+
+    if (data.startsWith("COLOR:")) {
+
+      const cor = data.replace("COLOR:", "");
+      setCorTela(cor);
+      reloadApp();
+    }
+    
+    else if (data === "DARKMODE") {
+      setCorTela("#111827");
+      reloadApp();
+      
+    }
+    
+    else if (data === "VIBRAR") {
+
+      Vibration.vibrate(1000);
+
+    } 
+    
+    else if (data.startsWith("SITE:")) {
+
+      const url = data.replace("SITE:", "");
+      Linking.openURL(url);
+
+    } 
+    
+    else if (data.startsWith("MENSAGEM:")) {
+
+      const mensagem = data.replace("MENSAGEM:", "");
+      alert(mensagem);
+
+    } 
+
+  async function reloadApp() {
+    try {
+      await Updates.reloadAsync();
+    } catch (error) {
+      alert("Erro ao recarregar o app: ", error);
+    }
+  }
+
+  }
+
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {backgroundColor: corTela}]}>
       <Text style={styles.titulo}>QR Expo 📷</Text>
 
       <View style={styles.cameraArea}>
@@ -128,7 +176,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: "#bdee35",
     
   },
 
