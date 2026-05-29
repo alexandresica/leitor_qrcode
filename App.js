@@ -8,12 +8,11 @@ export default function App() {
   const [conteudoQRCode, setConteudoQRCode] = useState("");
   const [escaneado, setEscaneado] = useState(false);
   const [historico, setHistorico] = useState([]);
-  const timestamp = Date.now();
-  const dataFormatada = new Date(timestamp).toLocaleString('pt-BR');
-  
-  useEffect(()=>{
-    historicoQR();
-  },[]);
+
+
+  useEffect(() => {
+    carregarHistorico();
+  }, []);
 
   if (!permission) {
     return (
@@ -34,11 +33,11 @@ export default function App() {
       </View>
     );
   }
-
-
+  
   function lerQRCode({ data }) {
     setEscaneado(true);
     setConteudoQRCode(data);
+    salvarHistorico(data)
   }
 
   function lerNovamente() {
@@ -46,19 +45,40 @@ export default function App() {
     setConteudoQRCode("");
   }
 
-  async function historicoQR() {
-    if(!conteudoQRCode) return
-    
-    
-    const historicoAtt = [...historico, {
-      id: Date.now().toString(),
-      qr: conteudoQRCode.toString(),
-      data: dataFormatada,
-    }]
+  async function salvarHistorico(data) {
+    try{   
+      
+      if(!data) return
+      
+      const historicoAtt = [...historico, {
+        id: Date.now().toString(),
+        qr: data.toString(),
+        data: new Date().toLocaleString("pt-BR"),
+      }]
 
-    setHistorico(historicoAtt)
+      setHistorico(historicoAtt);
 
+      await AsyncStorage.setItem(
+      "qrhist",
+      JSON.stringify(historicoAtt)
+      ); 
+    } catch (error) {
+      console.log("Erro ao salvar:", error);
+    } 
   }
+
+  async function carregarHistorico() {
+    try {
+      const dados = await AsyncStorage.getItem("qrhist");
+
+      if (dados) {
+        setHistorico(JSON.parse(dados));
+      }
+    } catch (error) {
+      console.log("Erro ao carregar histórico:", error);
+    }
+  }
+
 
   return (
     <View style={styles.container}>
@@ -86,11 +106,14 @@ export default function App() {
           <Button title="Ler outro QR Code" onPress={lerNovamente} />
         )}
       </View>
+      <Text style={styles.label}>
+        Histórico
+      </Text>
       <FlatList
         data={historico}
         keyExtractor={item => item.id}
-        renderItem={({item})=>(
-          <View>
+        renderItem={({ item }) => (
+          <View style={styles.itemHistorico}>
             <Text>{item.qr}</Text>
             <Text>{item.data}</Text>
           </View>
@@ -106,7 +129,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: "#bdee35",
-    justifyContent: "center",
+    
   },
 
   titulo: {
@@ -123,7 +146,7 @@ const styles = StyleSheet.create({
   },
 
   cameraArea: {
-    height: 350,
+    height: 250,
     borderRadius: 20,
     overflow: "hidden",
     backgroundColor: "#000000",
@@ -138,6 +161,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#e8ffc4",
     padding: 20,
     borderRadius: 15,
+    marginBottom: 20,
   },
 
   label: {
@@ -150,4 +174,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 20,
   },
+
+  itemHistorico: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
+},
 });
