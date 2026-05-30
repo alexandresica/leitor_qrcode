@@ -117,14 +117,14 @@ export default function App() {
 
     } 
 
+  }
+
   async function reloadApp() {
     try {
       await Updates.reloadAsync();
     } catch (error) {
       alert("Erro ao recarregar o app: ", error);
     }
-  }
-
   }
 
 
